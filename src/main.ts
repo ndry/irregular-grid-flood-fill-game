@@ -10,8 +10,8 @@ import { createMainGuiViewClass } from "./view/MainGuiView";
 
 const worldController = new WorldController(createWorld({
     populateBodiesConfig: {
-        worldWidth: 1000,
-        worldHeight: 1000,
+        worldWidth: 500,
+        worldHeight: 300,
         isPopulatable: () => true,
         chunkSide: 100,
         radiusMin: 8,

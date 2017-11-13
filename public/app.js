@@ -118,10 +118,22 @@ System.register("view/MainView", ["utils/misc"], function (exports_5, context_5)
         return class {
             constructor(entity) {
                 this.entity = entity;
-                this.camera = misc_2.adjust(new BABYLON.ArcRotateCamera("", -Math.PI / 2, 0, 100, new BABYLON.Vector3(0, 0, 0), env.scene), camera => {
-                    camera.lowerRadiusLimit = 2;
-                    camera.upperRadiusLimit = 50000;
-                    camera.attachControl(env.scene.getEngine().getRenderingCanvas(), false);
+                this.camera = misc_2.adjust(new BABYLON.TargetCamera("", new BABYLON.Vector3((this.entity.rect.maxX + this.entity.rect.minX) / 2, (this.entity.rect.maxY + this.entity.rect.minY) / 2, -1), env.scene), camera => {
+                    camera.setTarget(new BABYLON.Vector3(camera.position.x, camera.position.y, 0));
+                    camera.mode = BABYLON.Camera.ORTHOGRAPHIC_CAMERA;
+                    const worldWidth = this.entity.rect.maxX - this.entity.rect.minX;
+                    const worldHeight = this.entity.rect.maxY - this.entity.rect.minY;
+                    const worldRatio = worldWidth / worldHeight;
+                    const renderWidth = env.scene.getEngine().getRenderWidth();
+                    const renderHeight = env.scene.getEngine().getRenderHeight();
+                    const renderRatio = renderWidth / renderHeight;
+                    const ratio = renderRatio / worldRatio;
+                    const scale = Math.max(1 / ratio, 1);
+                    camera.orthoTop = scale * this.entity.rect.maxY;
+                    camera.orthoBottom = scale * this.entity.rect.minY;
+                    camera.orthoLeft = scale * ratio * this.entity.rect.minX;
+                    camera.orthoRight = scale * ratio * this.entity.rect.maxX;
+                    env.scene.activeCamera = camera;
                 });
                 // light1 = new BABYLON.PointLight("", new BABYLON.Vector3(0, 10, 0), env.scene);
                 this.light = new BABYLON.DirectionalLight("", new BABYLON.Vector3(1, 1, 1), env.scene);
@@ -228,7 +240,7 @@ System.register("Controller", ["utils/misc"], function (exports_7, context_7) {
                             view.mesh.renderOutline = false;
                         }));
                         view.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPickTrigger, evt => {
-                            this.mainView.camera.lockedTarget = view.mesh;
+                            // todo make turn
                         }));
                     });
                 });
@@ -314,8 +326,8 @@ System.register("world/createWorld", ["utils/misc", "utils/ChunkManager"], funct
         }
         function randomPosition() {
             return {
-                x: x(Math.random() - .5, 0, config.worldWidth),
-                y: x(Math.random() - .5, 0, config.worldHeight),
+                x: x(Math.random(), -config.worldWidth / 2, config.worldWidth / 2),
+                y: x(Math.random(), -config.worldHeight / 2, config.worldHeight / 2),
             };
         }
         function randomRadius() {
@@ -359,6 +371,12 @@ System.register("world/createWorld", ["utils/misc", "utils/ChunkManager"], funct
             players: new Set(),
             bodies: new Set(),
             currentPlayerIndex: 0,
+            rect: {
+                minX: -config.populateBodiesConfig.worldWidth / 2,
+                maxX: config.populateBodiesConfig.worldWidth / 2,
+                minY: -config.populateBodiesConfig.worldHeight / 2,
+                maxY: config.populateBodiesConfig.worldHeight / 2,
+            },
         };
         world.originalColors.add({
             color: "#0000FF",
@@ -430,8 +448,8 @@ System.register("main", ["world/WorldController", "world/createWorld", "utils/mi
         execute: function () {
             worldController = new WorldController_1.WorldController(createWorld_1.createWorld({
                 populateBodiesConfig: {
-                    worldWidth: 1000,
-                    worldHeight: 1000,
+                    worldWidth: 500,
+                    worldHeight: 300,
                     isPopulatable: () => true,
                     chunkSide: 100,
                     radiusMin: 8,

@@ -38,7 +38,7 @@ export function createControllerClass(env: {
                 view.actionManager.registerAction(new BABYLON.ExecuteCodeAction(
                     BABYLON.ActionManager.OnPickTrigger,
                     evt => {
-                        this.mainView.camera.lockedTarget = view.mesh;
+                        // todo make turn
                     }));
             });
         });

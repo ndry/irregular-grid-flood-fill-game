@@ -22,8 +22,8 @@ export function populateBodies(
     }
     function randomPosition() {
         return {
-            x: x(Math.random() - .5, 0, config.worldWidth),
-            y: x(Math.random() - .5, 0, config.worldHeight),
+            x: x(Math.random(), -config.worldWidth / 2, config.worldWidth / 2),
+            y: x(Math.random(), -config.worldHeight / 2, config.worldHeight / 2),
         };
     }
     function randomRadius() {
@@ -67,7 +67,6 @@ export function populateBodies(
 
 interface CreateWorldConfig {
     populateBodiesConfig: PopulateBodiesConfig;
-    // balh-blah-blah
 }
 
 export function createWorld(config: CreateWorldConfig): WorldEntity {
@@ -76,6 +75,12 @@ export function createWorld(config: CreateWorldConfig): WorldEntity {
         players: new Set<PlayerEntity>(),
         bodies: new Set<BodyEntity>(),
         currentPlayerIndex: 0,
+        rect: {
+            minX: -config.populateBodiesConfig.worldWidth / 2,
+            maxX: config.populateBodiesConfig.worldWidth / 2,
+            minY: -config.populateBodiesConfig.worldHeight / 2,
+            maxY: config.populateBodiesConfig.worldHeight / 2,
+        },
     };
 
     world.originalColors.add({

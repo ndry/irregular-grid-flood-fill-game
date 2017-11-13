@@ -25,4 +25,10 @@ export interface WorldEntity {
     players: Set<PlayerEntity>;
     bodies: Set<BodyEntity>;
     currentPlayerIndex: number;
+    rect: {
+        minX: number;
+        maxX: number;
+        maxY: number;
+        minY: number;
+    };
 }
