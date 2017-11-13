@@ -1,0 +1,15 @@
+{
+  "name": "irregular-grid-flood-fill-game",
+  "private": true,
+  "scripts": {
+    "start": "http-server . -p 45845 -o http://127.0.0.1:45845/public/ -c-1"
+  },
+  "devDependencies": {
+    "@types/underscore": "^1.8.1",
+    "babylonjs": "^3.1.0-alpha3.7",
+    "babylonjs-gui": "^3.1.0-beta1.0",
+    "http-server": "^0.10.0",
+    "rxjs": "^5.5.2"
+  },
+  "dependencies": {}
+}
