@@ -17,6 +17,7 @@ const worldController = new WorldController(createWorld({
         radiusMin: 8,
         radiusMax: 38,
         failedMax: 750,
+        connectionDistanceFactor: 5
     },
 }));
 

@@ -18,11 +18,13 @@ export interface BodyEntity {
     radius: number;
     originalColor: ColorEntity;
     owner?: PlayerEntity;
+    previewOwner?: PlayerEntity;
+    neighbours: Set<BodyEntity>;
 }
 
 export interface WorldEntity {
     originalColors: Set<ColorEntity>;
-    players: Set<PlayerEntity>;
+    players: Array<PlayerEntity>;
     bodies: Set<BodyEntity>;
     currentPlayerIndex: number;
     rect: {

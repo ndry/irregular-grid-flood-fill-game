@@ -9,7 +9,8 @@ interface PopulateBodiesConfig {
     failedMax: number;
     radiusMin: number;
     radiusMax: number;
-    isPopulatable: (position: {x: number, y: number}) => boolean;
+    connectionDistanceFactor: number;
+    isPopulatable: (position: { x: number, y: number }) => boolean;
 }
 
 export function populateBodies(
@@ -49,6 +50,7 @@ export function populateBodies(
             radius: randomRadius(),
             originalColor: getRandomElement([...originalColors]),
             owner: undefined,
+            neighbours: new Set<BodyEntity>()
         };
 
         const freeSpot = [...bodies.enumerateSquare(body.position, config.radiusMax * 2)]
@@ -62,6 +64,44 @@ export function populateBodies(
         }
     }
 
+    for (const body of bodies.enumerateAll()) {
+        const closeTrees = [...bodies.enumerateSquare(body.position, config.connectionDistanceFactor * (config.radiusMax + body.radius))]
+            .filter(t => body !== t && distCenter(t, body) < config.connectionDistanceFactor * (t.radius + body.radius))
+            .sort((at, bt) => distCenter(body, at) - distCenter(body, bt));
+
+        let hiddenTrees = new Set<BodyEntity>();
+
+        // for (let i = 0; i < closeTrees.length; i++) {
+        //     const t = closeTrees[i];
+
+        //     const dt = new Point(t.x - body.x, t.y - body.y);
+        //     const at = Math.asin(t.size / dt.getMagnitude());
+
+        //     closeTrees
+        //         .slice(i + 1)
+        //         .filter(t2 => {
+
+        //             const dt2 = new Point(t2.x - body.x, t2.y - body.y);
+        //             const at2 = Math.asin(t2.size / dt2.getMagnitude());
+
+        //             const minAllowedAngle = at + at2;
+
+        //             var a = Math.acos(dt.dot(dt2) / (dt.getMagnitude() * dt2.getMagnitude()));
+
+        //             return a < minAllowedAngle;
+        //         })
+        //         .forEach(t2 => hiddenTrees.add(t2));
+        // }
+
+
+        closeTrees
+            .filter(t => !hiddenTrees.has(t))
+            .forEach(t => {
+                body.neighbours.add(t);
+                t.neighbours.add(body);
+            });
+    }
+
     return new Set([...bodies.enumerateAll()]);
 }
 
@@ -72,7 +112,7 @@ interface CreateWorldConfig {
 export function createWorld(config: CreateWorldConfig): WorldEntity {
     const world: WorldEntity = {
         originalColors: new Set<ColorEntity>(),
-        players: new Set<PlayerEntity>(),
+        players: new Array<PlayerEntity>(),
         bodies: new Set<BodyEntity>(),
         currentPlayerIndex: 0,
         rect: {
@@ -84,22 +124,34 @@ export function createWorld(config: CreateWorldConfig): WorldEntity {
     };
 
     world.originalColors.add({
-        color: "#0000FF",
+        color: "#40FFFF",
     });
     world.originalColors.add({
-        color: "#00FF00",
+        color: "#FFFF40",
     });
     world.originalColors.add({
-        color: "#FF0000",
-    });
-
-    world.players.add({
-        name: "Player 1",
-        color: "#FF0000",
-        base: new Set<BodyEntity>(),
+        color: "#FF40FF",
     });
 
     world.bodies = populateBodies(config.populateBodiesConfig, world.originalColors);
+
+    world.players.push({
+        name: "Player 1",
+        color: "#FF0000",
+        base: new Set<BodyEntity>([getRandomElement([...world.bodies].filter(b => !b.owner))]),
+    });
+
+    world.players.push({
+        name: "Player 2",
+        color: "#0000FF",
+        base: new Set<BodyEntity>([getRandomElement([...world.bodies].filter(b => !b.owner))]),
+    });
+
+    for (const player of world.players) {
+        for (const body of player.base) {
+            body.owner = player;
+        }
+    }
 
     return world;
 }

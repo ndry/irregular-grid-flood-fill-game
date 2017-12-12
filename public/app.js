@@ -23,6 +23,20 @@ System.register("world/WorldController", [], function (exports_2, context_2) {
                 previewTurn(color) {
                     // tslint:disable-next-line:no-console
                     console.log("previewTurn", color);
+                    const currentPlayer = this.worldEntity.players[this.worldEntity.currentPlayerIndex];
+                    for (const body of currentPlayer.base) {
+                        for (const neighbour of body.neighbours) {
+                            if (color !== neighbour.originalColor) {
+                                continue;
+                            }
+                            neighbour.previewOwner = currentPlayer;
+                        }
+                    }
+                }
+                clearPreviewTurn() {
+                    for (const body of this.worldEntity.bodies) {
+                        body.previewOwner = undefined;
+                    }
                 }
             };
             exports_2("WorldController", WorldController);
@@ -86,17 +100,29 @@ System.register("view/BodyView", ["utils/misc"], function (exports_4, context_4)
         return class {
             constructor(entity) {
                 this.entity = entity;
+                this.material = misc_1.adjust(new BABYLON.StandardMaterial("", env.scene), material => {
+                    const color = this.entity.owner
+                        ? this.entity.owner.color
+                        : this.entity.originalColor.color;
+                    material.diffuseColor = BABYLON.Color3.FromHexString(color);
+                });
                 this.mesh = misc_1.adjust(BABYLON.MeshBuilder.CreateDisc("", {
                     radius: this.entity.radius,
                 }, env.scene), mesh => {
                     mesh.position.set(this.entity.position.x, this.entity.position.y, 0);
-                    mesh.material = misc_1.adjust(new BABYLON.StandardMaterial("", env.scene), material => {
-                        material.diffuseColor = BABYLON.Color3.FromHexString(this.entity.originalColor.color);
-                    });
+                    mesh.material = this.material;
                     mesh.outlineColor = new BABYLON.Color3(0, 0, 1);
                     mesh.outlineWidth = 1;
                 });
                 this.actionManager = this.mesh.actionManager = new BABYLON.ActionManager(env.scene);
+            }
+            refresh() {
+                const color = this.entity.owner
+                    ? this.entity.owner.color
+                    : this.entity.previewOwner
+                        ? this.entity.previewOwner.color
+                        : this.entity.originalColor.color;
+                this.material.diffuseColor = BABYLON.Color3.FromHexString(color);
             }
         };
     }
@@ -234,16 +260,24 @@ System.register("Controller", ["utils/misc"], function (exports_7, context_7) {
                             view.mesh.renderOutline = true;
                             if (!view.entity.owner) {
                                 this.worldController.previewTurn(view.entity.originalColor);
+                                this.refresh();
                             }
                         }));
                         view.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPointerOutTrigger, evt => {
                             view.mesh.renderOutline = false;
+                            this.worldController.clearPreviewTurn();
+                            this.refresh();
                         }));
                         view.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPickTrigger, evt => {
                             // todo make turn
                         }));
                     });
                 });
+            }
+            refresh() {
+                for (const view of this.bodyViews) {
+                    view.refresh();
+                }
             }
         };
     }
@@ -351,6 +385,7 @@ System.register("world/createWorld", ["utils/misc", "utils/ChunkManager"], funct
                 radius: randomRadius(),
                 originalColor: misc_5.getRandomElement([...originalColors]),
                 owner: undefined,
+                neighbours: new Set()
             };
             const freeSpot = [...bodies.enumerateSquare(body.position, config.radiusMax * 2)]
                 .every(b => !areOverlapped(body, b));
@@ -362,13 +397,40 @@ System.register("world/createWorld", ["utils/misc", "utils/ChunkManager"], funct
                 failedCount++;
             }
         }
+        for (const body of bodies.enumerateAll()) {
+            const closeTrees = [...bodies.enumerateSquare(body.position, config.connectionDistanceFactor * (config.radiusMax + body.radius))]
+                .filter(t => body !== t && distCenter(t, body) < config.connectionDistanceFactor * (t.radius + body.radius))
+                .sort((at, bt) => distCenter(body, at) - distCenter(body, bt));
+            let hiddenTrees = new Set();
+            // for (let i = 0; i < closeTrees.length; i++) {
+            //     const t = closeTrees[i];
+            //     const dt = new Point(t.x - body.x, t.y - body.y);
+            //     const at = Math.asin(t.size / dt.getMagnitude());
+            //     closeTrees
+            //         .slice(i + 1)
+            //         .filter(t2 => {
+            //             const dt2 = new Point(t2.x - body.x, t2.y - body.y);
+            //             const at2 = Math.asin(t2.size / dt2.getMagnitude());
+            //             const minAllowedAngle = at + at2;
+            //             var a = Math.acos(dt.dot(dt2) / (dt.getMagnitude() * dt2.getMagnitude()));
+            //             return a < minAllowedAngle;
+            //         })
+            //         .forEach(t2 => hiddenTrees.add(t2));
+            // }
+            closeTrees
+                .filter(t => !hiddenTrees.has(t))
+                .forEach(t => {
+                body.neighbours.add(t);
+                t.neighbours.add(body);
+            });
+        }
         return new Set([...bodies.enumerateAll()]);
     }
     exports_9("populateBodies", populateBodies);
     function createWorld(config) {
         const world = {
             originalColors: new Set(),
-            players: new Set(),
+            players: new Array(),
             bodies: new Set(),
             currentPlayerIndex: 0,
             rect: {
@@ -379,20 +441,30 @@ System.register("world/createWorld", ["utils/misc", "utils/ChunkManager"], funct
             },
         };
         world.originalColors.add({
-            color: "#0000FF",
+            color: "#40FFFF",
         });
         world.originalColors.add({
-            color: "#00FF00",
+            color: "#FFFF40",
         });
         world.originalColors.add({
-            color: "#FF0000",
-        });
-        world.players.add({
-            name: "Player 1",
-            color: "#FF0000",
-            base: new Set(),
+            color: "#FF40FF",
         });
         world.bodies = populateBodies(config.populateBodiesConfig, world.originalColors);
+        world.players.push({
+            name: "Player 1",
+            color: "#FF0000",
+            base: new Set([misc_5.getRandomElement([...world.bodies].filter(b => !b.owner))]),
+        });
+        world.players.push({
+            name: "Player 2",
+            color: "#0000FF",
+            base: new Set([misc_5.getRandomElement([...world.bodies].filter(b => !b.owner))]),
+        });
+        for (const player of world.players) {
+            for (const body of player.base) {
+                body.owner = player;
+            }
+        }
         return world;
     }
     exports_9("createWorld", createWorld);
@@ -455,6 +527,7 @@ System.register("main", ["world/WorldController", "world/createWorld", "utils/mi
                     radiusMin: 8,
                     radiusMax: 38,
                     failedMax: 750,
+                    connectionDistanceFactor: 5
                 },
             }));
             canvas = misc_6.adjust(document.getElementById("canvas"), c => {
