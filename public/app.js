@@ -6,45 +6,8 @@ System.register("world/entities", [], function (exports_1, context_1) {
         }
     };
 });
-System.register("world/WorldController", [], function (exports_2, context_2) {
+System.register("utils/misc", [], function (exports_2, context_2) {
     var __moduleName = context_2 && context_2.id;
-    var WorldController;
-    return {
-        setters: [],
-        execute: function () {
-            WorldController = class WorldController {
-                constructor(worldEntity) {
-                    this.worldEntity = worldEntity;
-                }
-                makeTurn(color) {
-                    // tslint:disable-next-line:no-console
-                    console.log("makeTurn", color);
-                }
-                previewTurn(color) {
-                    // tslint:disable-next-line:no-console
-                    console.log("previewTurn", color);
-                    const currentPlayer = this.worldEntity.players[this.worldEntity.currentPlayerIndex];
-                    for (const body of currentPlayer.base) {
-                        for (const neighbour of body.neighbours) {
-                            if (color !== neighbour.originalColor) {
-                                continue;
-                            }
-                            neighbour.previewOwner = currentPlayer;
-                        }
-                    }
-                }
-                clearPreviewTurn() {
-                    for (const body of this.worldEntity.bodies) {
-                        body.previewOwner = undefined;
-                    }
-                }
-            };
-            exports_2("WorldController", WorldController);
-        }
-    };
-});
-System.register("utils/misc", [], function (exports_3, context_3) {
-    var __moduleName = context_3 && context_3.id;
     function isVisible(elt) {
         const style = window.getComputedStyle(elt);
         return (style.width !== null && +style.width !== 0)
@@ -53,18 +16,18 @@ System.register("utils/misc", [], function (exports_3, context_3) {
             && style.display !== "none"
             && style.visibility !== "hidden";
     }
-    exports_3("isVisible", isVisible);
+    exports_2("isVisible", isVisible);
     function adjust(x, ...applyAdjustmentList) {
         for (const applyAdjustment of applyAdjustmentList) {
             applyAdjustment(x);
         }
         return x;
     }
-    exports_3("adjust", adjust);
+    exports_2("adjust", adjust);
     function getRandomElement(array) {
         return array[Math.floor(Math.random() * array.length)];
     }
-    exports_3("getRandomElement", getRandomElement);
+    exports_2("getRandomElement", getRandomElement);
     function* floodFill(base, getNeighbours, neighbourFilter) {
         const queue = new Array();
         const visited = new Set();
@@ -87,10 +50,51 @@ System.register("utils/misc", [], function (exports_3, context_3) {
             }
         }
     }
-    exports_3("floodFill", floodFill);
+    exports_2("floodFill", floodFill);
     return {
         setters: [],
         execute: function () {
+        }
+    };
+});
+System.register("world/WorldController", ["utils/misc"], function (exports_3, context_3) {
+    var __moduleName = context_3 && context_3.id;
+    var misc_1, WorldController;
+    return {
+        setters: [
+            function (misc_1_1) {
+                misc_1 = misc_1_1;
+            }
+        ],
+        execute: function () {
+            WorldController = class WorldController {
+                constructor(worldEntity) {
+                    this.worldEntity = worldEntity;
+                }
+                makeTurn(color) {
+                    const currentPlayer = this.worldEntity.players[this.worldEntity.currentPlayerIndex];
+                    for (const { element: tree, wave } of misc_1.floodFill(currentPlayer.base.keys(), x => x.neighbours.keys(), t => ((t.originalColor === color && !t.owner) || t.owner === currentPlayer))) {
+                        if (tree.owner !== currentPlayer) {
+                            tree.owner = currentPlayer;
+                        }
+                    }
+                    this.worldEntity.currentPlayerIndex = (this.worldEntity.currentPlayerIndex + 1) % this.worldEntity.players.length;
+                }
+                previewTurn(color) {
+                    const currentPlayer = this.worldEntity.players[this.worldEntity.currentPlayerIndex];
+                    for (const { element: tree, wave } of misc_1.floodFill(currentPlayer.base.keys(), x => x.neighbours.keys(), t => ((t.originalColor === color && !t.owner) || t.owner === currentPlayer))) {
+                        if (tree.owner !== currentPlayer) {
+                            tree.previewOwner = currentPlayer;
+                        }
+                    }
+                }
+                clearPreviewTurn() {
+                    for (const body of this.worldEntity.bodies) {
+                        body.previewOwner = undefined;
+                    }
+                }
+            };
+            exports_3("WorldController", WorldController);
         }
     };
 });
@@ -100,13 +104,13 @@ System.register("view/BodyView", ["utils/misc"], function (exports_4, context_4)
         return class {
             constructor(entity) {
                 this.entity = entity;
-                this.material = misc_1.adjust(new BABYLON.StandardMaterial("", env.scene), material => {
+                this.material = misc_2.adjust(new BABYLON.StandardMaterial("", env.scene), material => {
                     const color = this.entity.owner
                         ? this.entity.owner.color
                         : this.entity.originalColor.color;
                     material.diffuseColor = BABYLON.Color3.FromHexString(color);
                 });
-                this.mesh = misc_1.adjust(BABYLON.MeshBuilder.CreateDisc("", {
+                this.mesh = misc_2.adjust(BABYLON.MeshBuilder.CreateDisc("", {
                     radius: this.entity.radius,
                 }, env.scene), mesh => {
                     mesh.position.set(this.entity.position.x, this.entity.position.y, 0);
@@ -135,11 +139,11 @@ System.register("view/BodyView", ["utils/misc"], function (exports_4, context_4)
         };
     }
     exports_4("createBodyViewClass", createBodyViewClass);
-    var misc_1;
+    var misc_2;
     return {
         setters: [
-            function (misc_1_1) {
-                misc_1 = misc_1_1;
+            function (misc_2_1) {
+                misc_2 = misc_2_1;
             }
         ],
         execute: function () {
@@ -152,7 +156,7 @@ System.register("view/MainView", ["utils/misc"], function (exports_5, context_5)
         return class {
             constructor(entity) {
                 this.entity = entity;
-                this.camera = misc_2.adjust(new BABYLON.TargetCamera("", new BABYLON.Vector3((this.entity.rect.maxX + this.entity.rect.minX) / 2, (this.entity.rect.maxY + this.entity.rect.minY) / 2, -1), env.scene), camera => {
+                this.camera = misc_3.adjust(new BABYLON.TargetCamera("", new BABYLON.Vector3((this.entity.rect.maxX + this.entity.rect.minX) / 2, (this.entity.rect.maxY + this.entity.rect.minY) / 2, -1), env.scene), camera => {
                     camera.setTarget(new BABYLON.Vector3(camera.position.x, camera.position.y, 0));
                     camera.mode = BABYLON.Camera.ORTHOGRAPHIC_CAMERA;
                     const worldWidth = this.entity.rect.maxX - this.entity.rect.minX;
@@ -175,11 +179,11 @@ System.register("view/MainView", ["utils/misc"], function (exports_5, context_5)
         };
     }
     exports_5("createMainViewClass", createMainViewClass);
-    var misc_2;
+    var misc_3;
     return {
         setters: [
-            function (misc_2_1) {
-                misc_2 = misc_2_1;
+            function (misc_3_1) {
+                misc_3 = misc_3_1;
             }
         ],
         execute: function () {
@@ -229,7 +233,7 @@ System.register("view/MainGuiView", ["utils/misc"], function (exports_6, context
     }
     exports_6("createMainGuiViewClass", createMainGuiViewClass);
     function create(constructor, parent, ...applyStyles) {
-        return misc_3.adjust(new constructor(), ...applyStyles, el => parent.addControl(el));
+        return misc_4.adjust(new constructor(), ...applyStyles, el => parent.addControl(el));
     }
     function defaultButtonStyle(el) {
         el.width = "100%";
@@ -243,11 +247,11 @@ System.register("view/MainGuiView", ["utils/misc"], function (exports_6, context
         el.height = "20px";
         el.color = "white";
     }
-    var misc_3;
+    var misc_4;
     return {
         setters: [
-            function (misc_3_1) {
-                misc_3 = misc_3_1;
+            function (misc_4_1) {
+                misc_4 = misc_4_1;
             }
         ],
         execute: function () {
@@ -261,9 +265,9 @@ System.register("Controller", ["utils/misc"], function (exports_7, context_7) {
             constructor(worldController) {
                 this.worldController = worldController;
                 this.mainView = new env.MainView(this.worldController.worldEntity);
-                this.mainGuiView = new env.MainGuiView(this.worldController.worldEntity);
+                // mainGuiView = new env.MainGuiView(this.worldController.worldEntity);
                 this.bodyViews = [...this.worldController.worldEntity.bodies].map(body => {
-                    return misc_4.adjust(new env.BodyView(body), view => {
+                    return misc_5.adjust(new env.BodyView(body), view => {
                         view.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPointerOverTrigger, evt => {
                             view.mesh.renderOutline = true;
                             if (!view.entity.owner) {
@@ -277,7 +281,10 @@ System.register("Controller", ["utils/misc"], function (exports_7, context_7) {
                             this.refresh();
                         }));
                         view.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPickTrigger, evt => {
-                            // todo make turn
+                            if (!view.entity.owner) {
+                                this.worldController.makeTurn(view.entity.originalColor);
+                                this.refresh();
+                            }
                         }));
                     });
                 });
@@ -290,11 +297,11 @@ System.register("Controller", ["utils/misc"], function (exports_7, context_7) {
         };
     }
     exports_7("createControllerClass", createControllerClass);
-    var misc_4;
+    var misc_5;
     return {
         setters: [
-            function (misc_4_1) {
-                misc_4 = misc_4_1;
+            function (misc_5_1) {
+                misc_5 = misc_5_1;
             }
         ],
         execute: function () {
@@ -391,7 +398,7 @@ System.register("world/createWorld", ["utils/misc", "utils/ChunkManager"], funct
             const body = {
                 position: randomPosition(),
                 radius: randomRadius(),
-                originalColor: misc_5.getRandomElement([...originalColors]),
+                originalColor: misc_6.getRandomElement([...originalColors]),
                 owner: undefined,
                 neighbours: new Set()
             };
@@ -469,16 +476,19 @@ System.register("world/createWorld", ["utils/misc", "utils/ChunkManager"], funct
         world.originalColors.add({
             color: "#FF40FF",
         });
+        world.originalColors.add({
+            color: "#BC8F8F",
+        });
         world.bodies = populateBodies(config.populateBodiesConfig, world.originalColors);
         world.players.push({
             name: "Player 1",
             color: "#FF0000",
-            base: new Set([misc_5.getRandomElement([...world.bodies].filter(b => !b.owner))]),
+            base: new Set([misc_6.getRandomElement([...world.bodies].filter(b => !b.owner))]),
         });
         world.players.push({
             name: "Player 2",
             color: "#0000FF",
-            base: new Set([misc_5.getRandomElement([...world.bodies].filter(b => !b.owner))]),
+            base: new Set([misc_6.getRandomElement([...world.bodies].filter(b => !b.owner))]),
         });
         for (const player of world.players) {
             for (const body of player.base) {
@@ -488,11 +498,11 @@ System.register("world/createWorld", ["utils/misc", "utils/ChunkManager"], funct
         return world;
     }
     exports_9("createWorld", createWorld);
-    var misc_5, ChunkManager_1;
+    var misc_6, ChunkManager_1;
     return {
         setters: [
-            function (misc_5_1) {
-                misc_5 = misc_5_1;
+            function (misc_6_1) {
+                misc_6 = misc_6_1;
             },
             function (ChunkManager_1_1) {
                 ChunkManager_1 = ChunkManager_1_1;
@@ -512,7 +522,7 @@ System.register("utils/Constructor", [], function (exports_10, context_10) {
 });
 System.register("main", ["world/WorldController", "world/createWorld", "utils/misc", "view/BodyView", "Controller", "view/MainView", "view/MainGuiView"], function (exports_11, context_11) {
     var __moduleName = context_11 && context_11.id;
-    var WorldController_1, createWorld_1, misc_6, BodyView_1, Controller_1, MainView_1, MainGuiView_1, worldController, canvas, engine, scene, MainView, MainGuiView, BodyView, Controller, controller;
+    var WorldController_1, createWorld_1, misc_7, BodyView_1, Controller_1, MainView_1, MainGuiView_1, worldController, canvas, engine, scene, MainView, MainGuiView, BodyView, Controller, controller;
     return {
         setters: [
             function (WorldController_1_1) {
@@ -521,8 +531,8 @@ System.register("main", ["world/WorldController", "world/createWorld", "utils/mi
             function (createWorld_1_1) {
                 createWorld_1 = createWorld_1_1;
             },
-            function (misc_6_1) {
-                misc_6 = misc_6_1;
+            function (misc_7_1) {
+                misc_7 = misc_7_1;
             },
             function (BodyView_1_1) {
                 BodyView_1 = BodyView_1_1;
@@ -550,11 +560,11 @@ System.register("main", ["world/WorldController", "world/createWorld", "utils/mi
                     connectionDistanceFactor: 5
                 },
             }));
-            canvas = misc_6.adjust(document.getElementById("canvas"), c => {
+            canvas = misc_7.adjust(document.getElementById("canvas"), c => {
                 c.addEventListener("contextmenu", ev => ev.preventDefault());
             });
             engine = new BABYLON.Engine(canvas, true);
-            scene = misc_6.adjust(new BABYLON.Scene(engine), s => {
+            scene = misc_7.adjust(new BABYLON.Scene(engine), s => {
                 s.clearColor = new BABYLON.Color4(0.1, 0, 0.1, 1);
             });
             MainView = MainView_1.createMainViewClass({

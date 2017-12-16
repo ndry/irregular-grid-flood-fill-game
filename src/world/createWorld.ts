@@ -145,6 +145,9 @@ export function createWorld(config: CreateWorldConfig): WorldEntity {
     world.originalColors.add({
         color: "#FF40FF",
     });
+    world.originalColors.add({
+        color: "#BC8F8F",
+    });
 
     world.bodies = populateBodies(config.populateBodiesConfig, world.originalColors);
 
