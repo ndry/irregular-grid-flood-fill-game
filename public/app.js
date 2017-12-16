@@ -114,6 +114,14 @@ System.register("view/BodyView", ["utils/misc"], function (exports_4, context_4)
                     mesh.outlineColor = new BABYLON.Color3(0, 0, 1);
                     mesh.outlineWidth = 1;
                 });
+                this.connections = [...this.entity.neighbours].map(n => BABYLON.MeshBuilder.CreateLines("", {
+                    points: [
+                        new BABYLON.Vector3(this.entity.position.x, this.entity.position.y, 0),
+                        new BABYLON.Vector3(n.position.x, n.position.y, 0)
+                    ],
+                    updatable: false,
+                    instance: null
+                }, env.scene));
                 this.actionManager = this.mesh.actionManager = new BABYLON.ActionManager(env.scene);
             }
             refresh() {
