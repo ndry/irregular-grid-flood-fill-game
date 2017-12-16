@@ -4,7 +4,7 @@ import { adjust } from "../utils/misc";
 export interface IMainView {
     entity: WorldEntity;
     camera: BABYLON.Camera;
-    light: BABYLON.DirectionalLight;
+    light: BABYLON.HemisphericLight;
 }
 
 export type MainViewCtor = new (entity: WorldEntity) => IMainView;
@@ -16,6 +16,7 @@ export function createMainViewClass(env: {
         constructor(
             public entity: WorldEntity,
         ) {
+            env.scene.clearColor = new BABYLON.Color4(1, 1, 1);
         }
 
         camera = adjust(new BABYLON.TargetCamera(
@@ -47,7 +48,10 @@ export function createMainViewClass(env: {
             env.scene.activeCamera = camera;
         });
 
+
+
         // light1 = new BABYLON.PointLight("", new BABYLON.Vector3(0, 10, 0), env.scene);
-        light = new BABYLON.DirectionalLight("", new BABYLON.Vector3(1, 1, 1), env.scene);
+        // light = new BABYLON.DirectionalLight("", new BABYLON.Vector3(1, 1, 1), env.scene);
+        light = new BABYLON.HemisphericLight("", new BABYLON.Vector3(0, 0, -1), env.scene);
     };
 }

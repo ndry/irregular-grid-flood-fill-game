@@ -137,16 +137,19 @@ export function createWorld(config: CreateWorldConfig): WorldEntity {
     };
 
     world.originalColors.add({
-        color: "#40FFFF",
+        color: "#008000",
     });
     world.originalColors.add({
-        color: "#FFFF40",
+        color: "#FFFF00",
     });
     world.originalColors.add({
-        color: "#FF40FF",
+        color: "#FFFFFF",
     });
     world.originalColors.add({
-        color: "#BC8F8F",
+        color: "#FFA500",
+    });
+    world.originalColors.add({
+        color: "#FFC0CB",
     });
 
     world.bodies = populateBodies(config.populateBodiesConfig, world.originalColors);

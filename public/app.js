@@ -104,6 +104,14 @@ System.register("view/BodyView", ["utils/misc"], function (exports_4, context_4)
         return class {
             constructor(entity) {
                 this.entity = entity;
+                this.outline = misc_2.adjust(BABYLON.MeshBuilder.CreateDisc("", {
+                    radius: this.entity.radius + 1,
+                }, env.scene), mesh => {
+                    mesh.position.set(this.entity.position.x, this.entity.position.y, .1);
+                    mesh.material = misc_2.adjust(new BABYLON.StandardMaterial("", env.scene), material => {
+                        material.diffuseColor = BABYLON.Color3.FromHexString("#000000");
+                    });
+                });
                 this.material = misc_2.adjust(new BABYLON.StandardMaterial("", env.scene), material => {
                     const color = this.entity.owner
                         ? this.entity.owner.color
@@ -120,11 +128,15 @@ System.register("view/BodyView", ["utils/misc"], function (exports_4, context_4)
                 });
                 this.connections = [...this.entity.neighbours].map(n => BABYLON.MeshBuilder.CreateLines("", {
                     points: [
-                        new BABYLON.Vector3(this.entity.position.x, this.entity.position.y, 0),
-                        new BABYLON.Vector3(n.position.x, n.position.y, 0)
+                        new BABYLON.Vector3(this.entity.position.x, this.entity.position.y, 1),
+                        new BABYLON.Vector3(n.position.x, n.position.y, 1),
                     ],
                     updatable: false,
-                    instance: null
+                    instance: null,
+                    colors: [
+                        new BABYLON.Color4(0, 0, 0),
+                        new BABYLON.Color4(0, 0, 0),
+                    ],
                 }, env.scene));
                 this.actionManager = this.mesh.actionManager = new BABYLON.ActionManager(env.scene);
             }
@@ -174,7 +186,9 @@ System.register("view/MainView", ["utils/misc"], function (exports_5, context_5)
                     env.scene.activeCamera = camera;
                 });
                 // light1 = new BABYLON.PointLight("", new BABYLON.Vector3(0, 10, 0), env.scene);
-                this.light = new BABYLON.DirectionalLight("", new BABYLON.Vector3(1, 1, 1), env.scene);
+                // light = new BABYLON.DirectionalLight("", new BABYLON.Vector3(1, 1, 1), env.scene);
+                this.light = new BABYLON.HemisphericLight("", new BABYLON.Vector3(0, 0, -1), env.scene);
+                env.scene.clearColor = new BABYLON.Color4(1, 1, 1);
             }
         };
     }
@@ -468,16 +482,19 @@ System.register("world/createWorld", ["utils/misc", "utils/ChunkManager"], funct
             },
         };
         world.originalColors.add({
-            color: "#40FFFF",
+            color: "#008000",
         });
         world.originalColors.add({
-            color: "#FFFF40",
+            color: "#FFFF00",
         });
         world.originalColors.add({
-            color: "#FF40FF",
+            color: "#FFFFFF",
         });
         world.originalColors.add({
-            color: "#BC8F8F",
+            color: "#FFA500",
+        });
+        world.originalColors.add({
+            color: "#FFC0CB",
         });
         world.bodies = populateBodies(config.populateBodiesConfig, world.originalColors);
         world.players.push({

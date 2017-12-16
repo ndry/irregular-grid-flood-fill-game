@@ -19,6 +19,15 @@ export function createBodyViewClass(env: {
         ) {
         }
 
+        outline = adjust(BABYLON.MeshBuilder.CreateDisc("", {
+            radius: this.entity.radius + 1,
+        }, env.scene), mesh => {
+            mesh.position.set(this.entity.position.x, this.entity.position.y, .1);
+            mesh.material = adjust(new BABYLON.StandardMaterial("", env.scene), material => {
+                material.diffuseColor = BABYLON.Color3.FromHexString("#000000");
+            });
+        });
+
         material = adjust(new BABYLON.StandardMaterial("", env.scene), material => {
             const color = this.entity.owner
                 ? this.entity.owner.color
@@ -35,14 +44,17 @@ export function createBodyViewClass(env: {
             mesh.outlineWidth = 1;
         });
 
-
         connections = [...this.entity.neighbours].map(n => BABYLON.MeshBuilder.CreateLines("", {
             points: [
-                new BABYLON.Vector3(this.entity.position.x, this.entity.position.y, 0),
-                new BABYLON.Vector3(n.position.x, n.position.y, 0)
+                new BABYLON.Vector3(this.entity.position.x, this.entity.position.y, 1),
+                new BABYLON.Vector3(n.position.x, n.position.y, 1),
             ],
-            updatable: false, 
-            instance: null
+            updatable: false,
+            instance: null,
+            colors: [
+                new BABYLON.Color4(0, 0, 0),
+                new BABYLON.Color4(0, 0, 0),
+            ],
         }, env.scene));
 
         actionManager = this.mesh.actionManager = new BABYLON.ActionManager(env.scene);
