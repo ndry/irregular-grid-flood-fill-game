@@ -71,27 +71,40 @@ export function populateBodies(
 
         let hiddenTrees = new Set<BodyEntity>();
 
-        // for (let i = 0; i < closeTrees.length; i++) {
-        //     const t = closeTrees[i];
+        for (let i = 0; i < closeTrees.length; i++) {
+            const t = closeTrees[i];
 
-        //     const dt = new Point(t.x - body.x, t.y - body.y);
-        //     const at = Math.asin(t.size / dt.getMagnitude());
+            function getMagnitude({x, y}: {x: number, y: number}) {
+                return Math.sqrt(x*x + y*y);
+            }
+            function dot(a: {x: number, y: number}, b: {x: number, y: number}) {
+                return a.x*b.x + a.y*b.y;
+            }
 
-        //     closeTrees
-        //         .slice(i + 1)
-        //         .filter(t2 => {
+            const dt = {
+                x: t.position.x - body.position.x, 
+                y: t.position.y - body.position.y
+            };
+            const at = Math.asin(t.radius / getMagnitude(dt));
 
-        //             const dt2 = new Point(t2.x - body.x, t2.y - body.y);
-        //             const at2 = Math.asin(t2.size / dt2.getMagnitude());
+            closeTrees
+                .slice(i + 1)
+                .filter(t2 => {
 
-        //             const minAllowedAngle = at + at2;
+                    const dt2 = {
+                        x: t2.position.x - body.position.x, 
+                        y: t2.position.y - body.position.y
+                    };
+                    const at2 = Math.asin(t2.radius / getMagnitude(dt2));
 
-        //             var a = Math.acos(dt.dot(dt2) / (dt.getMagnitude() * dt2.getMagnitude()));
+                    const minAllowedAngle = at + at2;
 
-        //             return a < minAllowedAngle;
-        //         })
-        //         .forEach(t2 => hiddenTrees.add(t2));
-        // }
+                    var a = Math.acos(dot(dt, dt2) / (getMagnitude(dt) * getMagnitude(dt2)));
+
+                    return a < minAllowedAngle;
+                })
+                .forEach(t2 => hiddenTrees.add(t2));
+        }
 
 
         closeTrees
@@ -131,6 +144,9 @@ export function createWorld(config: CreateWorldConfig): WorldEntity {
     });
     world.originalColors.add({
         color: "#FF40FF",
+    });
+    world.originalColors.add({
+        color: "#BC8F8F",
     });
 
     world.bodies = populateBodies(config.populateBodiesConfig, world.originalColors);

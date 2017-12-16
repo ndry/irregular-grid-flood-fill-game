@@ -1,4 +1,5 @@
-import { WorldEntity, ColorEntity } from "./entities";
+import { WorldEntity, ColorEntity, BodyEntity } from "./entities";
+import { floodFill } from "../utils/misc";
 
 export class WorldController {
     constructor(
@@ -8,18 +9,31 @@ export class WorldController {
 
 
     makeTurn(color: ColorEntity): void {
-        // tslint:disable-next-line:no-console
-        console.log("makeTurn", color);
+        const currentPlayer = this.worldEntity.players[this.worldEntity.currentPlayerIndex];
+
+        for (const { element: tree, wave } of floodFill(
+            currentPlayer.base.keys(),
+            x => x.neighbours.keys(),
+            t => ((t.originalColor === color && !t.owner) || t.owner === currentPlayer)
+        )) {  
+            if (tree.owner !== currentPlayer) {
+                tree.owner = currentPlayer;
+            }
+        }
+
+        this.worldEntity.currentPlayerIndex = (this.worldEntity.currentPlayerIndex + 1) % this.worldEntity.players.length;
     }
 
     previewTurn(color: ColorEntity): void {
-        // tslint:disable-next-line:no-console
-        console.log("previewTurn", color);
         const currentPlayer = this.worldEntity.players[this.worldEntity.currentPlayerIndex];
-        for (const body of currentPlayer.base) {
-            for (const neighbour of body.neighbours) {
-                if (color !== neighbour.originalColor) { continue; }
-                neighbour.previewOwner = currentPlayer;
+
+        for (const { element: tree, wave } of floodFill(
+            currentPlayer.base.keys(),
+            x => x.neighbours.keys(),
+            t => ((t.originalColor === color && !t.owner) || t.owner === currentPlayer)
+        )) {
+            if (tree.owner !== currentPlayer) {
+                tree.previewOwner = currentPlayer;
             }
         }
     }

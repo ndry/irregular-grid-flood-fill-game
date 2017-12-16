@@ -18,7 +18,7 @@ export function createControllerClass(env: {
         }
 
         mainView = new env.MainView(this.worldController.worldEntity);
-        mainGuiView = new env.MainGuiView(this.worldController.worldEntity);
+        // mainGuiView = new env.MainGuiView(this.worldController.worldEntity);
 
         bodyViews = [...this.worldController.worldEntity.bodies].map(body => {
             return adjust(new env.BodyView(body), view => {
@@ -41,8 +41,11 @@ export function createControllerClass(env: {
                 view.actionManager.registerAction(new BABYLON.ExecuteCodeAction(
                     BABYLON.ActionManager.OnPickTrigger,
                     evt => {
-                        // todo make turn
-                    }));
+                        if (!view.entity.owner) {
+                            this.worldController.makeTurn(view.entity.originalColor);
+                            this.refresh();
+                        }
+                }));
             });
         });
 
