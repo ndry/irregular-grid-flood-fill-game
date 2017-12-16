@@ -410,21 +410,33 @@ System.register("world/createWorld", ["utils/misc", "utils/ChunkManager"], funct
                 .filter(t => body !== t && distCenter(t, body) < config.connectionDistanceFactor * (t.radius + body.radius))
                 .sort((at, bt) => distCenter(body, at) - distCenter(body, bt));
             let hiddenTrees = new Set();
-            // for (let i = 0; i < closeTrees.length; i++) {
-            //     const t = closeTrees[i];
-            //     const dt = new Point(t.x - body.x, t.y - body.y);
-            //     const at = Math.asin(t.size / dt.getMagnitude());
-            //     closeTrees
-            //         .slice(i + 1)
-            //         .filter(t2 => {
-            //             const dt2 = new Point(t2.x - body.x, t2.y - body.y);
-            //             const at2 = Math.asin(t2.size / dt2.getMagnitude());
-            //             const minAllowedAngle = at + at2;
-            //             var a = Math.acos(dt.dot(dt2) / (dt.getMagnitude() * dt2.getMagnitude()));
-            //             return a < minAllowedAngle;
-            //         })
-            //         .forEach(t2 => hiddenTrees.add(t2));
-            // }
+            for (let i = 0; i < closeTrees.length; i++) {
+                const t = closeTrees[i];
+                function getMagnitude({ x, y }) {
+                    return Math.sqrt(x * x + y * y);
+                }
+                function dot(a, b) {
+                    return a.x * b.x + a.y * b.y;
+                }
+                const dt = {
+                    x: t.position.x - body.position.x,
+                    y: t.position.y - body.position.y
+                };
+                const at = Math.asin(t.radius / getMagnitude(dt));
+                closeTrees
+                    .slice(i + 1)
+                    .filter(t2 => {
+                    const dt2 = {
+                        x: t2.position.x - body.position.x,
+                        y: t2.position.y - body.position.y
+                    };
+                    const at2 = Math.asin(t2.radius / getMagnitude(dt2));
+                    const minAllowedAngle = at + at2;
+                    var a = Math.acos(dot(dt, dt2) / (getMagnitude(dt) * getMagnitude(dt2)));
+                    return a < minAllowedAngle;
+                })
+                    .forEach(t2 => hiddenTrees.add(t2));
+            }
             closeTrees
                 .filter(t => !hiddenTrees.has(t))
                 .forEach(t => {
