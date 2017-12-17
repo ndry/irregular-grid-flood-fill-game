@@ -1,11 +1,15 @@
-import { WorldEntity, ColorEntity, BodyEntity } from "./entities";
+import { WorldEntity, ColorEntity, BodyEntity, PlayerEntity } from "./entities";
 import { floodFill } from "../utils/misc";
+import Rx from "rxjs";
 
 export class WorldController {
     constructor(
         public worldEntity: WorldEntity,
     ) {
     }
+
+    changedSubject = new Rx.Subject<null>();
+    changedObservable = Rx.Observable.from(this.changedSubject);
 
     highlightCluster(body: BodyEntity): void {
         for (const { element: b, wave } of floodFill<BodyEntity>(
@@ -15,6 +19,7 @@ export class WorldController {
         )) {
             b.highlighted = true;
         }
+        this.changedSubject.next(null);
     }
 
     clearHighlightCluster(body: BodyEntity): void {
@@ -25,6 +30,7 @@ export class WorldController {
         )) {
             b.highlighted = false;
         }
+        this.changedSubject.next(null);
     }
 
     makeTurn(color: ColorEntity): void {
@@ -41,6 +47,8 @@ export class WorldController {
         }
 
         this.worldEntity.currentPlayerIndex = (this.worldEntity.currentPlayerIndex + 1) % this.worldEntity.players.length;
+        
+        this.changedSubject.next(null);
     }
 
     previewTurn(color: ColorEntity): void {
@@ -55,11 +63,13 @@ export class WorldController {
                 tree.previewOwner = currentPlayer;
             }
         }
+        this.changedSubject.next(null);
     }
 
     clearPreviewTurn() {
         for (const body of this.worldEntity.bodies) {
             body.previewOwner = undefined;
         }
+        this.changedSubject.next(null);
     }
 }

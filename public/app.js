@@ -57,29 +57,39 @@ System.register("utils/misc", [], function (exports_2, context_2) {
         }
     };
 });
-System.register("world/WorldController", ["utils/misc"], function (exports_3, context_3) {
+System.register("world/WorldController", ["utils/misc", "rxjs"], function (exports_3, context_3) {
     var __moduleName = context_3 && context_3.id;
-    var misc_1, WorldController;
+    var misc_1, rxjs_1, DataBase, WorldController;
     return {
         setters: [
             function (misc_1_1) {
                 misc_1 = misc_1_1;
+            },
+            function (rxjs_1_1) {
+                rxjs_1 = rxjs_1_1;
             }
         ],
         execute: function () {
+            DataBase = class DataBase {
+            };
+            exports_3("DataBase", DataBase);
             WorldController = class WorldController {
                 constructor(worldEntity) {
                     this.worldEntity = worldEntity;
+                    this.changedSubject = new rxjs_1.default.Subject();
+                    this.changedObservable = rxjs_1.default.Observable.from(this.changedSubject);
                 }
                 highlightCluster(body) {
                     for (const { element: b, wave } of misc_1.floodFill(new Set([body]).keys(), x => x.neighbours.keys(), t => (t.originalColor === body.originalColor))) {
                         b.highlighted = true;
                     }
+                    this.changedSubject.next(null);
                 }
                 clearHighlightCluster(body) {
                     for (const { element: b, wave } of misc_1.floodFill(new Set([body]).keys(), x => x.neighbours.keys(), t => (t.originalColor === body.originalColor))) {
                         b.highlighted = false;
                     }
+                    this.changedSubject.next(null);
                 }
                 makeTurn(color) {
                     const currentPlayer = this.worldEntity.players[this.worldEntity.currentPlayerIndex];
@@ -89,6 +99,7 @@ System.register("world/WorldController", ["utils/misc"], function (exports_3, co
                         }
                     }
                     this.worldEntity.currentPlayerIndex = (this.worldEntity.currentPlayerIndex + 1) % this.worldEntity.players.length;
+                    this.changedSubject.next(null);
                 }
                 previewTurn(color) {
                     const currentPlayer = this.worldEntity.players[this.worldEntity.currentPlayerIndex];
@@ -97,11 +108,13 @@ System.register("world/WorldController", ["utils/misc"], function (exports_3, co
                             tree.previewOwner = currentPlayer;
                         }
                     }
+                    this.changedSubject.next(null);
                 }
                 clearPreviewTurn() {
                     for (const body of this.worldEntity.bodies) {
                         body.previewOwner = undefined;
                     }
+                    this.changedSubject.next(null);
                 }
             };
             exports_3("WorldController", WorldController);
@@ -300,31 +313,33 @@ System.register("Controller", ["utils/misc"], function (exports_7, context_7) {
                     return misc_5.adjust(new env.BodyView(body, this.worldController.worldEntity), view => {
                         view.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPointerOverTrigger, evt => {
                             this.worldController.highlightCluster(view.entity);
-                            this.refresh();
                             if (!view.entity.owner) {
                                 this.worldController.previewTurn(view.entity.originalColor);
-                                this.refresh();
                             }
                         }));
                         view.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPointerOutTrigger, evt => {
                             this.worldController.clearHighlightCluster(view.entity);
-                            this.refresh();
                             this.worldController.clearPreviewTurn();
-                            this.refresh();
                         }));
                         view.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPickTrigger, evt => {
                             if (!view.entity.owner) {
                                 this.worldController.makeTurn(view.entity.originalColor);
-                                this.refresh();
                             }
                         }));
                     });
+                });
+                this.worldControllerChangedSubscribtion = this.worldController.changedObservable
+                    .subscribe(() => {
+                    this.refresh();
                 });
             }
             refresh() {
                 for (const view of this.bodyViews) {
                     view.refresh();
                 }
+            }
+            dispose() {
+                this.worldControllerChangedSubscribtion.unsubscribe();
             }
         };
     }
