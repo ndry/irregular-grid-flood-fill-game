@@ -46,7 +46,7 @@ export function createControllerClass(env: {
             });
         });
 
-        worldControllerChangedSubscribtion = this.worldController.changedObservable
+        worldControllerChangedSubscription = this.worldController.changedObservable
             .subscribe(() => {
                 this.refresh();
             });
@@ -58,7 +58,7 @@ export function createControllerClass(env: {
         }
 
         dispose() {
-            this.worldControllerChangedSubscribtion.unsubscribe();
+            this.worldControllerChangedSubscription.unsubscribe();
         }
     };
 }
