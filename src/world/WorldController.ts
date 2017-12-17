@@ -7,6 +7,25 @@ export class WorldController {
     ) {
     }
 
+    highlightCluster(body: BodyEntity): void {
+        for (const { element: b, wave } of floodFill<BodyEntity>(
+            new Set([body]).keys(),
+            x => x.neighbours.keys(),
+            t => (t.originalColor === body.originalColor)
+        )) {
+            b.highlighted = true;
+        }
+    }
+
+    clearHighlightCluster(body: BodyEntity): void {
+        for (const { element: b, wave } of floodFill<BodyEntity>(
+            new Set([body]).keys(),
+            x => x.neighbours.keys(),
+            t => (t.originalColor === body.originalColor)
+        )) {
+            b.highlighted = false;
+        }
+    }
 
     makeTurn(color: ColorEntity): void {
         const currentPlayer = this.worldEntity.players[this.worldEntity.currentPlayerIndex];
@@ -15,7 +34,7 @@ export class WorldController {
             currentPlayer.base.keys(),
             x => x.neighbours.keys(),
             t => ((t.originalColor === color && !t.owner) || t.owner === currentPlayer)
-        )) {  
+        )) {
             if (tree.owner !== currentPlayer) {
                 tree.owner = currentPlayer;
             }

@@ -16,7 +16,7 @@ export function createMainViewClass(env: {
         constructor(
             public entity: WorldEntity,
         ) {
-            env.scene.clearColor = new BABYLON.Color4(1, 1, 1);
+            env.scene.clearColor = BABYLON.Color4.FromHexString("#32CD32FF");
         }
 
         camera = adjust(new BABYLON.TargetCamera(

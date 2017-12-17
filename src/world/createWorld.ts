@@ -50,7 +50,8 @@ export function populateBodies(
             radius: randomRadius(),
             originalColor: getRandomElement([...originalColors]),
             owner: undefined,
-            neighbours: new Set<BodyEntity>()
+            neighbours: new Set<BodyEntity>(),
+            highlighted: false
         };
 
         const freeSpot = [...bodies.enumerateSquare(body.position, config.radiusMax * 2)]
