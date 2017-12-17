@@ -21,38 +21,44 @@ export function createControllerClass(env: {
         // mainGuiView = new env.MainGuiView(this.worldController.worldEntity);
 
         bodyViews = [...this.worldController.worldEntity.bodies].map(body => {
-            return adjust(new env.BodyView(body), view => {
+            return adjust(new env.BodyView(body, this.worldController.worldEntity), view => {
                 view.actionManager.registerAction(new BABYLON.ExecuteCodeAction(
                     BABYLON.ActionManager.OnPointerOverTrigger,
                     evt => {
-                        view.mesh.renderOutline = true;
+                        this.worldController.highlightCluster(view.entity);
                         if (!view.entity.owner) {
                             this.worldController.previewTurn(view.entity.originalColor);
-                            this.refresh();
                         }
                     }));
                 view.actionManager.registerAction(new BABYLON.ExecuteCodeAction(
                     BABYLON.ActionManager.OnPointerOutTrigger,
                     evt => {
-                        view.mesh.renderOutline = false;
+                        this.worldController.clearHighlightCluster(view.entity);
                         this.worldController.clearPreviewTurn();
-                        this.refresh();
                     }));
                 view.actionManager.registerAction(new BABYLON.ExecuteCodeAction(
                     BABYLON.ActionManager.OnPickTrigger,
                     evt => {
                         if (!view.entity.owner) {
                             this.worldController.makeTurn(view.entity.originalColor);
-                            this.refresh();
                         }
-                }));
+                    }));
             });
         });
+
+        worldControllerChangedSubscription = this.worldController.changedObservable
+            .subscribe(() => {
+                this.refresh();
+            });
 
         refresh() {
             for (const view of this.bodyViews) {
                 view.refresh();
             }
+        }
+
+        dispose() {
+            this.worldControllerChangedSubscription.unsubscribe();
         }
     };
 }

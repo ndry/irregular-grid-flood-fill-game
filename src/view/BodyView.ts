@@ -1,14 +1,16 @@
-import { BodyEntity } from "../world/entities";
+import { BodyEntity, WorldEntity } from "../world/entities";
 import { adjust } from "../utils/misc";
 
 export interface IBodyView {
     entity: BodyEntity;
     mesh: BABYLON.Mesh;
+    outlineMaterial: BABYLON.StandardMaterial;
+    outline: BABYLON.Mesh;
     actionManager: BABYLON.ActionManager;
     refresh(): void;
 }
 
-export type BodyViewCtor = new (entity: BodyEntity) => IBodyView;
+export type BodyViewCtor = new (entity: BodyEntity, worldEntity: WorldEntity) => IBodyView;
 
 export function createBodyViewClass(env: {
     scene: BABYLON.Scene;
@@ -16,16 +18,19 @@ export function createBodyViewClass(env: {
     return class implements IBodyView {
         constructor(
             public entity: BodyEntity,
+            public worldEntity: WorldEntity,
         ) {
         }
+
+        outlineMaterial = adjust(new BABYLON.StandardMaterial("", env.scene), material => {
+            material.diffuseColor = BABYLON.Color3.FromHexString("#000000");
+        });
 
         outline = adjust(BABYLON.MeshBuilder.CreateDisc("", {
             radius: this.entity.radius + 1,
         }, env.scene), mesh => {
             mesh.position.set(this.entity.position.x, this.entity.position.y, .1);
-            mesh.material = adjust(new BABYLON.StandardMaterial("", env.scene), material => {
-                material.diffuseColor = BABYLON.Color3.FromHexString("#000000");
-            });
+            mesh.material = this.outlineMaterial;
         });
 
         material = adjust(new BABYLON.StandardMaterial("", env.scene), material => {
@@ -66,6 +71,11 @@ export function createBodyViewClass(env: {
                     ? this.entity.previewOwner.color
                     : this.entity.originalColor.color;
             this.material.diffuseColor = BABYLON.Color3.FromHexString(color);
+
+            const outlineColor = this.entity.highlighted
+                ? this.worldEntity.players[this.worldEntity.currentPlayerIndex].color
+                : "#000000";
+            this.outlineMaterial.diffuseColor = BABYLON.Color3.FromHexString(outlineColor);
         }
     };
 }

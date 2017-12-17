@@ -1,5 +1,6 @@
-import { WorldEntity, ColorEntity, BodyEntity } from "./entities";
+import { WorldEntity, ColorEntity, BodyEntity, PlayerEntity } from "./entities";
 import { floodFill } from "../utils/misc";
+import Rx from "rxjs";
 
 export class WorldController {
     constructor(
@@ -7,6 +8,30 @@ export class WorldController {
     ) {
     }
 
+    changedSubject = new Rx.Subject<null>();
+    changedObservable = Rx.Observable.from(this.changedSubject);
+
+    highlightCluster(body: BodyEntity): void {
+        for (const { element: b, wave } of floodFill<BodyEntity>(
+            new Set([body]).keys(),
+            x => x.neighbours.keys(),
+            t => (t.originalColor === body.originalColor)
+        )) {
+            b.highlighted = true;
+        }
+        this.changedSubject.next(null);
+    }
+
+    clearHighlightCluster(body: BodyEntity): void {
+        for (const { element: b, wave } of floodFill<BodyEntity>(
+            new Set([body]).keys(),
+            x => x.neighbours.keys(),
+            t => (t.originalColor === body.originalColor)
+        )) {
+            b.highlighted = false;
+        }
+        this.changedSubject.next(null);
+    }
 
     makeTurn(color: ColorEntity): void {
         const currentPlayer = this.worldEntity.players[this.worldEntity.currentPlayerIndex];
@@ -15,13 +40,15 @@ export class WorldController {
             currentPlayer.base.keys(),
             x => x.neighbours.keys(),
             t => ((t.originalColor === color && !t.owner) || t.owner === currentPlayer)
-        )) {  
+        )) {
             if (tree.owner !== currentPlayer) {
                 tree.owner = currentPlayer;
             }
         }
 
         this.worldEntity.currentPlayerIndex = (this.worldEntity.currentPlayerIndex + 1) % this.worldEntity.players.length;
+        
+        this.changedSubject.next(null);
     }
 
     previewTurn(color: ColorEntity): void {
@@ -36,11 +63,13 @@ export class WorldController {
                 tree.previewOwner = currentPlayer;
             }
         }
+        this.changedSubject.next(null);
     }
 
     clearPreviewTurn() {
         for (const body of this.worldEntity.bodies) {
             body.previewOwner = undefined;
         }
+        this.changedSubject.next(null);
     }
 }

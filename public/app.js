@@ -57,19 +57,39 @@ System.register("utils/misc", [], function (exports_2, context_2) {
         }
     };
 });
-System.register("world/WorldController", ["utils/misc"], function (exports_3, context_3) {
+System.register("world/WorldController", ["utils/misc", "rxjs"], function (exports_3, context_3) {
     var __moduleName = context_3 && context_3.id;
-    var misc_1, WorldController;
+    var misc_1, rxjs_1, DataBase, WorldController;
     return {
         setters: [
             function (misc_1_1) {
                 misc_1 = misc_1_1;
+            },
+            function (rxjs_1_1) {
+                rxjs_1 = rxjs_1_1;
             }
         ],
         execute: function () {
+            DataBase = class DataBase {
+            };
+            exports_3("DataBase", DataBase);
             WorldController = class WorldController {
                 constructor(worldEntity) {
                     this.worldEntity = worldEntity;
+                    this.changedSubject = new rxjs_1.default.Subject();
+                    this.changedObservable = rxjs_1.default.Observable.from(this.changedSubject);
+                }
+                highlightCluster(body) {
+                    for (const { element: b, wave } of misc_1.floodFill(new Set([body]).keys(), x => x.neighbours.keys(), t => (t.originalColor === body.originalColor))) {
+                        b.highlighted = true;
+                    }
+                    this.changedSubject.next(null);
+                }
+                clearHighlightCluster(body) {
+                    for (const { element: b, wave } of misc_1.floodFill(new Set([body]).keys(), x => x.neighbours.keys(), t => (t.originalColor === body.originalColor))) {
+                        b.highlighted = false;
+                    }
+                    this.changedSubject.next(null);
                 }
                 makeTurn(color) {
                     const currentPlayer = this.worldEntity.players[this.worldEntity.currentPlayerIndex];
@@ -79,6 +99,7 @@ System.register("world/WorldController", ["utils/misc"], function (exports_3, co
                         }
                     }
                     this.worldEntity.currentPlayerIndex = (this.worldEntity.currentPlayerIndex + 1) % this.worldEntity.players.length;
+                    this.changedSubject.next(null);
                 }
                 previewTurn(color) {
                     const currentPlayer = this.worldEntity.players[this.worldEntity.currentPlayerIndex];
@@ -87,11 +108,13 @@ System.register("world/WorldController", ["utils/misc"], function (exports_3, co
                             tree.previewOwner = currentPlayer;
                         }
                     }
+                    this.changedSubject.next(null);
                 }
                 clearPreviewTurn() {
                     for (const body of this.worldEntity.bodies) {
                         body.previewOwner = undefined;
                     }
+                    this.changedSubject.next(null);
                 }
             };
             exports_3("WorldController", WorldController);
@@ -102,15 +125,17 @@ System.register("view/BodyView", ["utils/misc"], function (exports_4, context_4)
     var __moduleName = context_4 && context_4.id;
     function createBodyViewClass(env) {
         return class {
-            constructor(entity) {
+            constructor(entity, worldEntity) {
                 this.entity = entity;
+                this.worldEntity = worldEntity;
+                this.outlineMaterial = misc_2.adjust(new BABYLON.StandardMaterial("", env.scene), material => {
+                    material.diffuseColor = BABYLON.Color3.FromHexString("#000000");
+                });
                 this.outline = misc_2.adjust(BABYLON.MeshBuilder.CreateDisc("", {
                     radius: this.entity.radius + 1,
                 }, env.scene), mesh => {
                     mesh.position.set(this.entity.position.x, this.entity.position.y, .1);
-                    mesh.material = misc_2.adjust(new BABYLON.StandardMaterial("", env.scene), material => {
-                        material.diffuseColor = BABYLON.Color3.FromHexString("#000000");
-                    });
+                    mesh.material = this.outlineMaterial;
                 });
                 this.material = misc_2.adjust(new BABYLON.StandardMaterial("", env.scene), material => {
                     const color = this.entity.owner
@@ -147,6 +172,10 @@ System.register("view/BodyView", ["utils/misc"], function (exports_4, context_4)
                         ? this.entity.previewOwner.color
                         : this.entity.originalColor.color;
                 this.material.diffuseColor = BABYLON.Color3.FromHexString(color);
+                const outlineColor = this.entity.highlighted
+                    ? this.worldEntity.players[this.worldEntity.currentPlayerIndex].color
+                    : "#000000";
+                this.outlineMaterial.diffuseColor = BABYLON.Color3.FromHexString(outlineColor);
             }
         };
     }
@@ -188,7 +217,7 @@ System.register("view/MainView", ["utils/misc"], function (exports_5, context_5)
                 // light1 = new BABYLON.PointLight("", new BABYLON.Vector3(0, 10, 0), env.scene);
                 // light = new BABYLON.DirectionalLight("", new BABYLON.Vector3(1, 1, 1), env.scene);
                 this.light = new BABYLON.HemisphericLight("", new BABYLON.Vector3(0, 0, -1), env.scene);
-                env.scene.clearColor = new BABYLON.Color4(1, 1, 1);
+                env.scene.clearColor = BABYLON.Color4.FromHexString("#32CD32FF");
             }
         };
     }
@@ -281,32 +310,36 @@ System.register("Controller", ["utils/misc"], function (exports_7, context_7) {
                 this.mainView = new env.MainView(this.worldController.worldEntity);
                 // mainGuiView = new env.MainGuiView(this.worldController.worldEntity);
                 this.bodyViews = [...this.worldController.worldEntity.bodies].map(body => {
-                    return misc_5.adjust(new env.BodyView(body), view => {
+                    return misc_5.adjust(new env.BodyView(body, this.worldController.worldEntity), view => {
                         view.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPointerOverTrigger, evt => {
-                            view.mesh.renderOutline = true;
+                            this.worldController.highlightCluster(view.entity);
                             if (!view.entity.owner) {
                                 this.worldController.previewTurn(view.entity.originalColor);
-                                this.refresh();
                             }
                         }));
                         view.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPointerOutTrigger, evt => {
-                            view.mesh.renderOutline = false;
+                            this.worldController.clearHighlightCluster(view.entity);
                             this.worldController.clearPreviewTurn();
-                            this.refresh();
                         }));
                         view.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPickTrigger, evt => {
                             if (!view.entity.owner) {
                                 this.worldController.makeTurn(view.entity.originalColor);
-                                this.refresh();
                             }
                         }));
                     });
+                });
+                this.worldControllerChangedSubscribtion = this.worldController.changedObservable
+                    .subscribe(() => {
+                    this.refresh();
                 });
             }
             refresh() {
                 for (const view of this.bodyViews) {
                     view.refresh();
                 }
+            }
+            dispose() {
+                this.worldControllerChangedSubscribtion.unsubscribe();
             }
         };
     }
@@ -414,7 +447,8 @@ System.register("world/createWorld", ["utils/misc", "utils/ChunkManager"], funct
                 radius: randomRadius(),
                 originalColor: misc_6.getRandomElement([...originalColors]),
                 owner: undefined,
-                neighbours: new Set()
+                neighbours: new Set(),
+                highlighted: false
             };
             const freeSpot = [...bodies.enumerateSquare(body.position, config.radiusMax * 2)]
                 .every(b => !areOverlapped(body, b));

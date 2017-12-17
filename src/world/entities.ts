@@ -20,6 +20,7 @@ export interface BodyEntity {
     owner?: PlayerEntity;
     previewOwner?: PlayerEntity;
     neighbours: Set<BodyEntity>;
+    highlighted: boolean;
 }
 
 export interface WorldEntity {
