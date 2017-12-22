@@ -1,3 +1,5 @@
+import * as Rx from "rxjs";
+
 export type Color = string;
 
 export interface ColorEntity {
@@ -20,14 +22,14 @@ export interface BodyEntity {
     owner?: PlayerEntity;
     previewOwner?: PlayerEntity;
     neighbours: Set<BodyEntity>;
-    highlighted: boolean;
+    highlighted: Rx.BehaviorSubject<boolean>;
 }
 
 export interface WorldEntity {
     originalColors: Set<ColorEntity>;
     players: Array<PlayerEntity>;
     bodies: Set<BodyEntity>;
-    currentPlayerIndex: number;
+    currentPlayerIndex: Rx.BehaviorSubject<number>;
     rect: {
         minX: number;
         maxX: number;

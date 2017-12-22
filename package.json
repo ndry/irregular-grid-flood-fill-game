@@ -8,8 +8,9 @@
     "@types/underscore": "^1.8.1",
     "babylonjs": "^3.1.0-alpha3.7",
     "babylonjs-gui": "^3.1.0-beta1.0",
-    "http-server": "^0.10.0",
-    "rxjs": "^5.5.2"
+    "http-server": "^0.10.0"
   },
-  "dependencies": {}
+  "dependencies": {
+    "rxjs": "^5.5.2"
+  }
 }

@@ -1,6 +1,7 @@
 import { WorldEntity, ColorEntity, PlayerEntity, BodyEntity } from "./entities";
 import { getRandomElement } from "../utils/misc";
 import { ChunkManager } from "../utils/ChunkManager";
+import Rx from "rxjs";
 
 interface PopulateBodiesConfig {
     worldWidth: number;
@@ -18,18 +19,18 @@ export function populateBodies(
     originalColors: Set<ColorEntity>,
 ): Set<BodyEntity> {
 
-    function x(t: number, xa: number, xb: number) {
+    function xt(t: number, xa: number, xb: number) {
         return xa + t * (xb - xa);
     }
     function randomPosition() {
         return {
-            x: x(Math.random(), -config.worldWidth / 2, config.worldWidth / 2),
-            y: x(Math.random(), -config.worldHeight / 2, config.worldHeight / 2),
+            x: xt(Math.random(), -config.worldWidth / 2, config.worldWidth / 2),
+            y: xt(Math.random(), -config.worldHeight / 2, config.worldHeight / 2),
         };
     }
     function randomRadius() {
         const t = Math.random() * Math.random() * Math.random() * Math.random();
-        return x(t, config.radiusMin, config.radiusMax);
+        return xt(t, config.radiusMin, config.radiusMax);
     }
     function distCenter(a: BodyEntity, b: BodyEntity) {
         return Math.sqrt(Math.pow(a.position.x - b.position.x, 2) + Math.pow(a.position.y - b.position.y, 2));
@@ -51,7 +52,7 @@ export function populateBodies(
             originalColor: getRandomElement([...originalColors]),
             owner: undefined,
             neighbours: new Set<BodyEntity>(),
-            highlighted: false
+            highlighted: new Rx.BehaviorSubject(false),
         };
 
         const freeSpot = [...bodies.enumerateSquare(body.position, config.radiusMax * 2)]
@@ -66,25 +67,27 @@ export function populateBodies(
     }
 
     for (const body of bodies.enumerateAll()) {
-        const closeTrees = [...bodies.enumerateSquare(body.position, config.connectionDistanceFactor * (config.radiusMax + body.radius))]
+        const closeTrees = [...bodies.enumerateSquare(
+            body.position,
+            config.connectionDistanceFactor * (config.radiusMax + body.radius))]
             .filter(t => body !== t && distCenter(t, body) < config.connectionDistanceFactor * (t.radius + body.radius))
             .sort((at, bt) => distCenter(body, at) - distCenter(body, bt));
 
-        let hiddenTrees = new Set<BodyEntity>();
+        const hiddenTrees = new Set<BodyEntity>();
 
         for (let i = 0; i < closeTrees.length; i++) {
             const t = closeTrees[i];
 
-            function getMagnitude({x, y}: {x: number, y: number}) {
-                return Math.sqrt(x*x + y*y);
+            function getMagnitude({ x, y }: { x: number, y: number }) {
+                return Math.sqrt(x * x + y * y);
             }
-            function dot(a: {x: number, y: number}, b: {x: number, y: number}) {
-                return a.x*b.x + a.y*b.y;
+            function dot(a: { x: number, y: number }, b: { x: number, y: number }) {
+                return a.x * b.x + a.y * b.y;
             }
 
             const dt = {
-                x: t.position.x - body.position.x, 
-                y: t.position.y - body.position.y
+                x: t.position.x - body.position.x,
+                y: t.position.y - body.position.y,
             };
             const at = Math.asin(t.radius / getMagnitude(dt));
 
@@ -93,20 +96,19 @@ export function populateBodies(
                 .filter(t2 => {
 
                     const dt2 = {
-                        x: t2.position.x - body.position.x, 
-                        y: t2.position.y - body.position.y
+                        x: t2.position.x - body.position.x,
+                        y: t2.position.y - body.position.y,
                     };
                     const at2 = Math.asin(t2.radius / getMagnitude(dt2));
 
                     const minAllowedAngle = at + at2;
 
-                    var a = Math.acos(dot(dt, dt2) / (getMagnitude(dt) * getMagnitude(dt2)));
+                    const a = Math.acos(dot(dt, dt2) / (getMagnitude(dt) * getMagnitude(dt2)));
 
                     return a < minAllowedAngle;
                 })
                 .forEach(t2 => hiddenTrees.add(t2));
         }
-
 
         closeTrees
             .filter(t => !hiddenTrees.has(t))
@@ -128,7 +130,7 @@ export function createWorld(config: CreateWorldConfig): WorldEntity {
         originalColors: new Set<ColorEntity>(),
         players: new Array<PlayerEntity>(),
         bodies: new Set<BodyEntity>(),
-        currentPlayerIndex: 0,
+        currentPlayerIndex: new Rx.BehaviorSubject(0),
         rect: {
             minX: -config.populateBodiesConfig.worldWidth / 2,
             maxX: config.populateBodiesConfig.worldWidth / 2,

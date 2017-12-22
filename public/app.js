@@ -59,7 +59,7 @@ System.register("utils/misc", [], function (exports_2, context_2) {
 });
 System.register("world/WorldController", ["utils/misc", "rxjs"], function (exports_3, context_3) {
     var __moduleName = context_3 && context_3.id;
-    var misc_1, rxjs_1, DataBase, WorldController;
+    var misc_1, rxjs_1, WorldController;
     return {
         setters: [
             function (misc_1_1) {
@@ -70,9 +70,6 @@ System.register("world/WorldController", ["utils/misc", "rxjs"], function (expor
             }
         ],
         execute: function () {
-            DataBase = class DataBase {
-            };
-            exports_3("DataBase", DataBase);
             WorldController = class WorldController {
                 constructor(worldEntity) {
                     this.worldEntity = worldEntity;
@@ -81,28 +78,28 @@ System.register("world/WorldController", ["utils/misc", "rxjs"], function (expor
                 }
                 highlightCluster(body) {
                     for (const { element: b, wave } of misc_1.floodFill(new Set([body]).keys(), x => x.neighbours.keys(), t => (t.originalColor === body.originalColor))) {
-                        b.highlighted = true;
+                        b.highlighted.next(true);
                     }
                     this.changedSubject.next(null);
                 }
                 clearHighlightCluster(body) {
                     for (const { element: b, wave } of misc_1.floodFill(new Set([body]).keys(), x => x.neighbours.keys(), t => (t.originalColor === body.originalColor))) {
-                        b.highlighted = false;
+                        b.highlighted.next(false);
                     }
                     this.changedSubject.next(null);
                 }
                 makeTurn(color) {
-                    const currentPlayer = this.worldEntity.players[this.worldEntity.currentPlayerIndex];
+                    const currentPlayer = this.worldEntity.players[this.worldEntity.currentPlayerIndex.value];
                     for (const { element: tree, wave } of misc_1.floodFill(currentPlayer.base.keys(), x => x.neighbours.keys(), t => ((t.originalColor === color && !t.owner) || t.owner === currentPlayer))) {
                         if (tree.owner !== currentPlayer) {
                             tree.owner = currentPlayer;
                         }
                     }
-                    this.worldEntity.currentPlayerIndex = (this.worldEntity.currentPlayerIndex + 1) % this.worldEntity.players.length;
+                    this.worldEntity.currentPlayerIndex.next((this.worldEntity.currentPlayerIndex.value + 1) % this.worldEntity.players.length);
                     this.changedSubject.next(null);
                 }
                 previewTurn(color) {
-                    const currentPlayer = this.worldEntity.players[this.worldEntity.currentPlayerIndex];
+                    const currentPlayer = this.worldEntity.players[this.worldEntity.currentPlayerIndex.value];
                     for (const { element: tree, wave } of misc_1.floodFill(currentPlayer.base.keys(), x => x.neighbours.keys(), t => ((t.originalColor === color && !t.owner) || t.owner === currentPlayer))) {
                         if (tree.owner !== currentPlayer) {
                             tree.previewOwner = currentPlayer;
@@ -164,6 +161,13 @@ System.register("view/BodyView", ["utils/misc"], function (exports_4, context_4)
                     ],
                 }, env.scene));
                 this.actionManager = this.mesh.actionManager = new BABYLON.ActionManager(env.scene);
+                this.highlightedSubscription = this.entity.highlighted
+                    .subscribe(highlighted => {
+                    const outlineColor = highlighted
+                        ? this.worldEntity.players[this.worldEntity.currentPlayerIndex.value].color
+                        : "#000000";
+                    this.outlineMaterial.diffuseColor = BABYLON.Color3.FromHexString(outlineColor);
+                });
             }
             refresh() {
                 const color = this.entity.owner
@@ -172,10 +176,6 @@ System.register("view/BodyView", ["utils/misc"], function (exports_4, context_4)
                         ? this.entity.previewOwner.color
                         : this.entity.originalColor.color;
                 this.material.diffuseColor = BABYLON.Color3.FromHexString(color);
-                const outlineColor = this.entity.highlighted
-                    ? this.worldEntity.players[this.worldEntity.currentPlayerIndex].color
-                    : "#000000";
-                this.outlineMaterial.diffuseColor = BABYLON.Color3.FromHexString(outlineColor);
             }
         };
     }
@@ -328,7 +328,7 @@ System.register("Controller", ["utils/misc"], function (exports_7, context_7) {
                         }));
                     });
                 });
-                this.worldControllerChangedSubscribtion = this.worldController.changedObservable
+                this.worldControllerChangedSubscription = this.worldController.changedObservable
                     .subscribe(() => {
                     this.refresh();
                 });
@@ -339,7 +339,7 @@ System.register("Controller", ["utils/misc"], function (exports_7, context_7) {
                 }
             }
             dispose() {
-                this.worldControllerChangedSubscribtion.unsubscribe();
+                this.worldControllerChangedSubscription.unsubscribe();
             }
         };
     }
@@ -414,21 +414,21 @@ System.register("utils/ChunkManager", [], function (exports_8, context_8) {
         }
     };
 });
-System.register("world/createWorld", ["utils/misc", "utils/ChunkManager"], function (exports_9, context_9) {
+System.register("world/createWorld", ["utils/misc", "utils/ChunkManager", "rxjs"], function (exports_9, context_9) {
     var __moduleName = context_9 && context_9.id;
     function populateBodies(config, originalColors) {
-        function x(t, xa, xb) {
+        function xt(t, xa, xb) {
             return xa + t * (xb - xa);
         }
         function randomPosition() {
             return {
-                x: x(Math.random(), -config.worldWidth / 2, config.worldWidth / 2),
-                y: x(Math.random(), -config.worldHeight / 2, config.worldHeight / 2),
+                x: xt(Math.random(), -config.worldWidth / 2, config.worldWidth / 2),
+                y: xt(Math.random(), -config.worldHeight / 2, config.worldHeight / 2),
             };
         }
         function randomRadius() {
             const t = Math.random() * Math.random() * Math.random() * Math.random();
-            return x(t, config.radiusMin, config.radiusMax);
+            return xt(t, config.radiusMin, config.radiusMax);
         }
         function distCenter(a, b) {
             return Math.sqrt(Math.pow(a.position.x - b.position.x, 2) + Math.pow(a.position.y - b.position.y, 2));
@@ -448,7 +448,7 @@ System.register("world/createWorld", ["utils/misc", "utils/ChunkManager"], funct
                 originalColor: misc_6.getRandomElement([...originalColors]),
                 owner: undefined,
                 neighbours: new Set(),
-                highlighted: false
+                highlighted: new rxjs_2.default.BehaviorSubject(false),
             };
             const freeSpot = [...bodies.enumerateSquare(body.position, config.radiusMax * 2)]
                 .every(b => !areOverlapped(body, b));
@@ -464,7 +464,7 @@ System.register("world/createWorld", ["utils/misc", "utils/ChunkManager"], funct
             const closeTrees = [...bodies.enumerateSquare(body.position, config.connectionDistanceFactor * (config.radiusMax + body.radius))]
                 .filter(t => body !== t && distCenter(t, body) < config.connectionDistanceFactor * (t.radius + body.radius))
                 .sort((at, bt) => distCenter(body, at) - distCenter(body, bt));
-            let hiddenTrees = new Set();
+            const hiddenTrees = new Set();
             for (let i = 0; i < closeTrees.length; i++) {
                 const t = closeTrees[i];
                 function getMagnitude({ x, y }) {
@@ -475,7 +475,7 @@ System.register("world/createWorld", ["utils/misc", "utils/ChunkManager"], funct
                 }
                 const dt = {
                     x: t.position.x - body.position.x,
-                    y: t.position.y - body.position.y
+                    y: t.position.y - body.position.y,
                 };
                 const at = Math.asin(t.radius / getMagnitude(dt));
                 closeTrees
@@ -483,11 +483,11 @@ System.register("world/createWorld", ["utils/misc", "utils/ChunkManager"], funct
                     .filter(t2 => {
                     const dt2 = {
                         x: t2.position.x - body.position.x,
-                        y: t2.position.y - body.position.y
+                        y: t2.position.y - body.position.y,
                     };
                     const at2 = Math.asin(t2.radius / getMagnitude(dt2));
                     const minAllowedAngle = at + at2;
-                    var a = Math.acos(dot(dt, dt2) / (getMagnitude(dt) * getMagnitude(dt2)));
+                    const a = Math.acos(dot(dt, dt2) / (getMagnitude(dt) * getMagnitude(dt2)));
                     return a < minAllowedAngle;
                 })
                     .forEach(t2 => hiddenTrees.add(t2));
@@ -507,7 +507,7 @@ System.register("world/createWorld", ["utils/misc", "utils/ChunkManager"], funct
             originalColors: new Set(),
             players: new Array(),
             bodies: new Set(),
-            currentPlayerIndex: 0,
+            currentPlayerIndex: new rxjs_2.default.BehaviorSubject(0),
             rect: {
                 minX: -config.populateBodiesConfig.worldWidth / 2,
                 maxX: config.populateBodiesConfig.worldWidth / 2,
@@ -549,7 +549,7 @@ System.register("world/createWorld", ["utils/misc", "utils/ChunkManager"], funct
         return world;
     }
     exports_9("createWorld", createWorld);
-    var misc_6, ChunkManager_1;
+    var misc_6, ChunkManager_1, rxjs_2;
     return {
         setters: [
             function (misc_6_1) {
@@ -557,6 +557,9 @@ System.register("world/createWorld", ["utils/misc", "utils/ChunkManager"], funct
             },
             function (ChunkManager_1_1) {
                 ChunkManager_1 = ChunkManager_1_1;
+            },
+            function (rxjs_2_1) {
+                rxjs_2 = rxjs_2_1;
             }
         ],
         execute: function () {

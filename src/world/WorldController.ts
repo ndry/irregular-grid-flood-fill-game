@@ -15,9 +15,9 @@ export class WorldController {
         for (const { element: b, wave } of floodFill<BodyEntity>(
             new Set([body]).keys(),
             x => x.neighbours.keys(),
-            t => (t.originalColor === body.originalColor)
+            t => (t.originalColor === body.originalColor),
         )) {
-            b.highlighted = true;
+            b.highlighted.next(true);
         }
         this.changedSubject.next(null);
     }
@@ -26,15 +26,15 @@ export class WorldController {
         for (const { element: b, wave } of floodFill<BodyEntity>(
             new Set([body]).keys(),
             x => x.neighbours.keys(),
-            t => (t.originalColor === body.originalColor)
+            t => (t.originalColor === body.originalColor),
         )) {
-            b.highlighted = false;
+            b.highlighted.next(false);
         }
         this.changedSubject.next(null);
     }
 
     makeTurn(color: ColorEntity): void {
-        const currentPlayer = this.worldEntity.players[this.worldEntity.currentPlayerIndex];
+        const currentPlayer = this.worldEntity.players[this.worldEntity.currentPlayerIndex.value];
 
         for (const { element: tree, wave } of floodFill(
             currentPlayer.base.keys(),
@@ -46,13 +46,14 @@ export class WorldController {
             }
         }
 
-        this.worldEntity.currentPlayerIndex = (this.worldEntity.currentPlayerIndex + 1) % this.worldEntity.players.length;
-        
+        this.worldEntity.currentPlayerIndex.next(
+            (this.worldEntity.currentPlayerIndex.value + 1) % this.worldEntity.players.length);
+
         this.changedSubject.next(null);
     }
 
     previewTurn(color: ColorEntity): void {
-        const currentPlayer = this.worldEntity.players[this.worldEntity.currentPlayerIndex];
+        const currentPlayer = this.worldEntity.players[this.worldEntity.currentPlayerIndex.value];
 
         for (const { element: tree, wave } of floodFill(
             currentPlayer.base.keys(),

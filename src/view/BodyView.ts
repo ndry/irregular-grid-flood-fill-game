@@ -64,6 +64,14 @@ export function createBodyViewClass(env: {
 
         actionManager = this.mesh.actionManager = new BABYLON.ActionManager(env.scene);
 
+        highlightedSubscription = this.entity.highlighted
+            .subscribe(highlighted => {
+                const outlineColor = highlighted
+                    ? this.worldEntity.players[this.worldEntity.currentPlayerIndex.value].color
+                    : "#000000";
+                this.outlineMaterial.diffuseColor = BABYLON.Color3.FromHexString(outlineColor);
+            });
+
         refresh(): void {
             const color = this.entity.owner
                 ? this.entity.owner.color
@@ -71,11 +79,6 @@ export function createBodyViewClass(env: {
                     ? this.entity.previewOwner.color
                     : this.entity.originalColor.color;
             this.material.diffuseColor = BABYLON.Color3.FromHexString(color);
-
-            const outlineColor = this.entity.highlighted
-                ? this.worldEntity.players[this.worldEntity.currentPlayerIndex].color
-                : "#000000";
-            this.outlineMaterial.diffuseColor = BABYLON.Color3.FromHexString(outlineColor);
         }
     };
 }
