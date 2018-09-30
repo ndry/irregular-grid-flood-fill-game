@@ -1,8 +1,6 @@
 import { WorldController } from "./world/WorldController";
 import { createWorld } from "./world/createWorld";
-import { BodyEntity } from "./world/entities";
 import { adjust } from "./utils/misc";
-import { Constructor } from "./utils/Constructor";
 import { createBodyViewClass } from "./view/BodyView";
 import { createControllerClass } from "./Controller";
 import { createMainViewClass } from "./view/MainView";
@@ -10,8 +8,8 @@ import { createMainGuiViewClass } from "./view/MainGuiView";
 
 const worldController = new WorldController(createWorld({
     populateBodiesConfig: {
-        worldWidth: 500,
-        worldHeight: 300,
+        worldWidth: 1500,
+        worldHeight: 900,
         isPopulatable: () => true,
         chunkSide: 100,
         radiusMin: 8,

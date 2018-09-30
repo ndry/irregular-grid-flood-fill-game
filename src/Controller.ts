@@ -1,4 +1,3 @@
-import { BodyEntity } from "./world/entities";
 import { WorldController } from "./world/WorldController";
 import { adjust } from "./utils/misc";
 import { BodyViewCtor } from "./view/BodyView";

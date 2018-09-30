@@ -9,7 +9,7 @@ export class WorldController {
     }
 
     changedSubject = new Rx.Subject<null>();
-    changedObservable = Rx.Observable.from(this.changedSubject);
+    changedObservable = this.changedSubject.asObservable();
 
     highlightCluster(body: BodyEntity): void {
         for (const { element: b, wave } of floodFill<BodyEntity>(

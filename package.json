@@ -2,6 +2,8 @@
   "name": "irregular-grid-flood-fill-game",
   "private": true,
   "scripts": {
+    "build": "tsc",
+    "cbuild": "tsc --watch",
     "start": "http-server . -p 45845 -o http://127.0.0.1:45845/public/ -c-1"
   },
   "devDependencies": {

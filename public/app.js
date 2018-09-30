@@ -58,8 +58,8 @@ System.register("utils/misc", [], function (exports_2, context_2) {
     };
 });
 System.register("world/WorldController", ["utils/misc", "rxjs"], function (exports_3, context_3) {
-    var __moduleName = context_3 && context_3.id;
     var misc_1, rxjs_1, WorldController;
+    var __moduleName = context_3 && context_3.id;
     return {
         setters: [
             function (misc_1_1) {
@@ -74,7 +74,7 @@ System.register("world/WorldController", ["utils/misc", "rxjs"], function (expor
                 constructor(worldEntity) {
                     this.worldEntity = worldEntity;
                     this.changedSubject = new rxjs_1.default.Subject();
-                    this.changedObservable = rxjs_1.default.Observable.from(this.changedSubject);
+                    this.changedObservable = this.changedSubject.asObservable();
                 }
                 highlightCluster(body) {
                     for (const { element: b, wave } of misc_1.floodFill(new Set([body]).keys(), x => x.neighbours.keys(), t => (t.originalColor === body.originalColor))) {
@@ -119,6 +119,7 @@ System.register("world/WorldController", ["utils/misc", "rxjs"], function (expor
     };
 });
 System.register("view/BodyView", ["utils/misc"], function (exports_4, context_4) {
+    var misc_2;
     var __moduleName = context_4 && context_4.id;
     function createBodyViewClass(env) {
         return class {
@@ -180,7 +181,6 @@ System.register("view/BodyView", ["utils/misc"], function (exports_4, context_4)
         };
     }
     exports_4("createBodyViewClass", createBodyViewClass);
-    var misc_2;
     return {
         setters: [
             function (misc_2_1) {
@@ -192,6 +192,7 @@ System.register("view/BodyView", ["utils/misc"], function (exports_4, context_4)
     };
 });
 System.register("view/MainView", ["utils/misc"], function (exports_5, context_5) {
+    var misc_3;
     var __moduleName = context_5 && context_5.id;
     function createMainViewClass(env) {
         return class {
@@ -222,7 +223,6 @@ System.register("view/MainView", ["utils/misc"], function (exports_5, context_5)
         };
     }
     exports_5("createMainViewClass", createMainViewClass);
-    var misc_3;
     return {
         setters: [
             function (misc_3_1) {
@@ -234,6 +234,7 @@ System.register("view/MainView", ["utils/misc"], function (exports_5, context_5)
     };
 });
 System.register("view/MainGuiView", ["utils/misc"], function (exports_6, context_6) {
+    var misc_4;
     var __moduleName = context_6 && context_6.id;
     function createMainGuiViewClass(env) {
         return class {
@@ -290,7 +291,6 @@ System.register("view/MainGuiView", ["utils/misc"], function (exports_6, context
         el.height = "20px";
         el.color = "white";
     }
-    var misc_4;
     return {
         setters: [
             function (misc_4_1) {
@@ -302,6 +302,7 @@ System.register("view/MainGuiView", ["utils/misc"], function (exports_6, context
     };
 });
 System.register("Controller", ["utils/misc"], function (exports_7, context_7) {
+    var misc_5;
     var __moduleName = context_7 && context_7.id;
     function createControllerClass(env) {
         return class {
@@ -344,7 +345,6 @@ System.register("Controller", ["utils/misc"], function (exports_7, context_7) {
         };
     }
     exports_7("createControllerClass", createControllerClass);
-    var misc_5;
     return {
         setters: [
             function (misc_5_1) {
@@ -356,6 +356,7 @@ System.register("Controller", ["utils/misc"], function (exports_7, context_7) {
     };
 });
 System.register("utils/ChunkManager", [], function (exports_8, context_8) {
+    var ChunkManager;
     var __moduleName = context_8 && context_8.id;
     function Map_getOrCreate(map, key, valueFactory) {
         let value = map.get(key);
@@ -365,7 +366,6 @@ System.register("utils/ChunkManager", [], function (exports_8, context_8) {
         }
         return value;
     }
-    var ChunkManager;
     return {
         setters: [],
         execute: function () {
@@ -415,6 +415,7 @@ System.register("utils/ChunkManager", [], function (exports_8, context_8) {
     };
 });
 System.register("world/createWorld", ["utils/misc", "utils/ChunkManager", "rxjs"], function (exports_9, context_9) {
+    var misc_6, ChunkManager_1, rxjs_2;
     var __moduleName = context_9 && context_9.id;
     function populateBodies(config, originalColors) {
         function xt(t, xa, xb) {
@@ -549,7 +550,6 @@ System.register("world/createWorld", ["utils/misc", "utils/ChunkManager", "rxjs"
         return world;
     }
     exports_9("createWorld", createWorld);
-    var misc_6, ChunkManager_1, rxjs_2;
     return {
         setters: [
             function (misc_6_1) {
@@ -566,17 +566,9 @@ System.register("world/createWorld", ["utils/misc", "utils/ChunkManager", "rxjs"
         }
     };
 });
-System.register("utils/Constructor", [], function (exports_10, context_10) {
-    var __moduleName = context_10 && context_10.id;
-    return {
-        setters: [],
-        execute: function () {
-        }
-    };
-});
-System.register("main", ["world/WorldController", "world/createWorld", "utils/misc", "view/BodyView", "Controller", "view/MainView", "view/MainGuiView"], function (exports_11, context_11) {
-    var __moduleName = context_11 && context_11.id;
+System.register("main", ["world/WorldController", "world/createWorld", "utils/misc", "view/BodyView", "Controller", "view/MainView", "view/MainGuiView"], function (exports_10, context_10) {
     var WorldController_1, createWorld_1, misc_7, BodyView_1, Controller_1, MainView_1, MainGuiView_1, worldController, canvas, engine, scene, MainView, MainGuiView, BodyView, Controller, controller;
+    var __moduleName = context_10 && context_10.id;
     return {
         setters: [
             function (WorldController_1_1) {
@@ -604,8 +596,8 @@ System.register("main", ["world/WorldController", "world/createWorld", "utils/mi
         execute: function () {
             worldController = new WorldController_1.WorldController(createWorld_1.createWorld({
                 populateBodiesConfig: {
-                    worldWidth: 500,
-                    worldHeight: 300,
+                    worldWidth: 1500,
+                    worldHeight: 900,
                     isPopulatable: () => true,
                     chunkSide: 100,
                     radiusMin: 8,
@@ -637,6 +629,14 @@ System.register("main", ["world/WorldController", "world/createWorld", "utils/mi
             });
             controller = new Controller(worldController);
             engine.runRenderLoop(() => scene.render());
+        }
+    };
+});
+System.register("utils/Constructor", [], function (exports_11, context_11) {
+    var __moduleName = context_11 && context_11.id;
+    return {
+        setters: [],
+        execute: function () {
         }
     };
 });
